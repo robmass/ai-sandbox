@@ -1,63 +1,275 @@
-import Image from 'next/image'
+'use client'
+
+import { useState } from 'react'
+
+type LLM = {
+  id: string
+  name: string
+  provider: 'openai' | 'anthropic' | 'google'
+  model: string
+}
+
+const AVAILABLE_LLMS: LLM[] = [
+  // OpenAI
+  { id: 'openai-gpt-4o', name: 'GPT-4o', provider: 'openai', model: 'gpt-4o' },
+  {
+    id: 'openai-gpt-4o-mini',
+    name: 'GPT-4o Mini',
+    provider: 'openai',
+    model: 'gpt-4o-mini',
+  },
+  {
+    id: 'openai-gpt-4-turbo',
+    name: 'GPT-4 Turbo',
+    provider: 'openai',
+    model: 'gpt-4-turbo',
+  },
+  // Anthropic
+  {
+    id: 'anthropic-claude-3-5-sonnet',
+    name: 'Claude 3.5 Sonnet',
+    provider: 'anthropic',
+    model: 'claude-3-5-sonnet-20241022',
+  },
+  {
+    id: 'anthropic-claude-3-5-haiku',
+    name: 'Claude 3.5 Haiku',
+    provider: 'anthropic',
+    model: 'claude-3-5-haiku-20241022',
+  },
+  {
+    id: 'anthropic-claude-3-opus',
+    name: 'Claude 3 Opus',
+    provider: 'anthropic',
+    model: 'claude-3-opus-20240229',
+  },
+  // Google
+  {
+    id: 'google-gemini-2-flash',
+    name: 'Gemini 2.0 Flash',
+    provider: 'google',
+    model: 'gemini-2.0-flash-exp',
+  },
+  {
+    id: 'google-gemini-1.5-pro',
+    name: 'Gemini 1.5 Pro',
+    provider: 'google',
+    model: 'gemini-1.5-pro',
+  },
+  {
+    id: 'google-gemini-1.5-flash',
+    name: 'Gemini 1.5 Flash',
+    provider: 'google',
+    model: 'gemini-1.5-flash',
+  },
+]
+
+type Response = {
+  text: string
+  loading: boolean
+  error?: string
+}
 
 export default function Home() {
+  const [prompt, setPrompt] = useState('')
+  const [llm1Id, setLlm1Id] = useState(AVAILABLE_LLMS[0]?.id || '')
+  const [llm2Id, setLlm2Id] = useState(AVAILABLE_LLMS[1]?.id || '')
+  const [response1, setResponse1] = useState<Response>({
+    text: '',
+    loading: false,
+  })
+  const [response2, setResponse2] = useState<Response>({
+    text: '',
+    loading: false,
+  })
+
+  const getLLMById = (id: string) => AVAILABLE_LLMS.find((llm) => llm.id === id)
+
+  const fetchResponse = async (
+    llmId: string,
+    setResponse: React.Dispatch<React.SetStateAction<Response>>
+  ) => {
+    const llm = getLLMById(llmId)
+    if (!llm) return
+
+    setResponse({ text: '', loading: true })
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          provider: llm.provider,
+          model: llm.model,
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error(`Error: ${res.statusText}`)
+      }
+
+      const data = await res.json()
+      setResponse({ text: data.response, loading: false })
+    } catch (error) {
+      setResponse({
+        text: '',
+        loading: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!prompt.trim()) return
+
+    // Fetch both responses in parallel
+    await Promise.all([
+      fetchResponse(llm1Id, setResponse1),
+      fetchResponse(llm2Id, setResponse2),
+    ])
+  }
+
+  const isLoading = response1.loading || response2.loading
+  const llm1 = getLLMById(llm1Id)
+  const llm2 = getLLMById(llm2Id)
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl leading-10 font-semibold tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 p-8 dark:from-zinc-900 dark:to-black">
+      <main className="mx-auto max-w-7xl">
+        <div className="mb-8 text-center">
+          <h1 className="mb-2 text-4xl font-bold text-zinc-900 dark:text-zinc-50">
+            AI Sandbox
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{' '}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{' '}
-            or the{' '}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{' '}
-            center.
+          <p className="text-zinc-600 dark:text-zinc-400">
+            Compare responses from different AI models
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="bg-foreground text-background flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 transition-colors hover:bg-[#383838] md:w-[158px] dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        <form
+          onSubmit={handleSubmit}
+          className="mb-8 rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-800"
+        >
+          <div className="mb-4">
+            <label
+              htmlFor="prompt"
+              className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
+              Prompt
+            </label>
+            <textarea
+              id="prompt"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Enter your prompt here..."
+              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-500"
+              rows={6}
+              required
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+
+          <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label
+                htmlFor="llm1"
+                className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
+                LLM 1
+              </label>
+              <select
+                id="llm1"
+                value={llm1Id}
+                onChange={(e) => setLlm1Id(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100"
+              >
+                {AVAILABLE_LLMS.map((llm) => (
+                  <option key={llm.id} value={llm.id}>
+                    {llm.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="llm2"
+                className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
+                LLM 2
+              </label>
+              <select
+                id="llm2"
+                value={llm2Id}
+                onChange={(e) => setLlm2Id(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100"
+              >
+                {AVAILABLE_LLMS.map((llm) => (
+                  <option key={llm.id} value={llm.id}>
+                    {llm.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading || !prompt.trim()}
+            className="w-full rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
           >
-            Documentation
-          </a>
+            {isLoading ? 'Generating...' : 'Compare Responses'}
+          </button>
+        </form>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Response 1 */}
+          <div className="rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-800">
+            <h2 className="mb-4 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+              {llm1?.name || 'LLM 1'}
+            </h2>
+            {response1.loading ? (
+              <div className="flex items-center justify-center rounded-lg bg-zinc-50 p-8 dark:bg-zinc-900">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+              </div>
+            ) : response1.error ? (
+              <div className="rounded-lg bg-red-50 p-4 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                Error: {response1.error}
+              </div>
+            ) : response1.text ? (
+              <div className="rounded-lg bg-zinc-50 p-4 whitespace-pre-wrap text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
+                {response1.text}
+              </div>
+            ) : (
+              <div className="rounded-lg bg-zinc-50 p-4 text-zinc-400 dark:bg-zinc-900">
+                Response will appear here...
+              </div>
+            )}
+          </div>
+
+          {/* Response 2 */}
+          <div className="rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-800">
+            <h2 className="mb-4 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+              {llm2?.name || 'LLM 2'}
+            </h2>
+            {response2.loading ? (
+              <div className="flex items-center justify-center rounded-lg bg-zinc-50 p-8 dark:bg-zinc-900">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+              </div>
+            ) : response2.error ? (
+              <div className="rounded-lg bg-red-50 p-4 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                Error: {response2.error}
+              </div>
+            ) : response2.text ? (
+              <div className="rounded-lg bg-zinc-50 p-4 whitespace-pre-wrap text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
+                {response2.text}
+              </div>
+            ) : (
+              <div className="rounded-lg bg-zinc-50 p-4 text-zinc-400 dark:bg-zinc-900">
+                Response will appear here...
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
