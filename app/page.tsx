@@ -26,41 +26,35 @@ const AVAILABLE_LLMS: LLM[] = [
   },
   // Anthropic
   {
-    id: 'anthropic-claude-3-5-sonnet',
-    name: 'Claude 3.5 Sonnet',
+    id: 'anthropic-claude-3-7-sonnet',
+    name: 'Claude 3.7 Sonnet',
     provider: 'anthropic',
-    model: 'claude-3-5-sonnet-20241022',
+    model: 'claude-3-7-sonnet-latest',
   },
   {
     id: 'anthropic-claude-3-5-haiku',
     name: 'Claude 3.5 Haiku',
     provider: 'anthropic',
-    model: 'claude-3-5-haiku-20241022',
+    model: 'claude-3-5-haiku-latest',
   },
   {
-    id: 'anthropic-claude-3-opus',
-    name: 'Claude 3 Opus',
+    id: 'anthropic-claude-4-opus',
+    name: 'Claude 4 Opus',
     provider: 'anthropic',
-    model: 'claude-3-opus-20240229',
+    model: 'claude-opus-4-0',
   },
   // Google
   {
-    id: 'google-gemini-2-flash',
-    name: 'Gemini 2.0 Flash',
+    id: 'gemini-2.5-flash-lite',
+    name: 'Gemini 2.5 Flash',
     provider: 'google',
-    model: 'gemini-2.0-flash-exp',
+    model: 'gemini-2.5-flash-lite',
   },
   {
-    id: 'google-gemini-1.5-pro',
-    name: 'Gemini 1.5 Pro',
+    id: 'google-gemini-2.5-pro',
+    name: 'Gemini 2.5 Pro',
     provider: 'google',
-    model: 'gemini-1.5-pro',
-  },
-  {
-    id: 'google-gemini-1.5-flash',
-    name: 'Gemini 1.5 Flash',
-    provider: 'google',
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.5-pro',
   },
 ]
 
